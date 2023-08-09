@@ -32,10 +32,10 @@ Session instance then can be used to send commands to RavenDB
      (rdb/limit 3)
      (rdb/->vector raven))))
 ```
-# CRUD Operations
+## CRUD Operations
 All CRUD operations must be made with a client that has a session open.
 
-## Create Document
+### Create Document
 Use `add-doc!` to create a document. The ID and Collection of the document can be found in the map's meta
 ```clojure
 ;; the function expects a client as first argument, a document/map as second argument and name of the collection as lasst argument
@@ -62,14 +62,14 @@ Alternatively, you may pass in an ID for the document that needs to be inserted
 (rdb/add-doc! raven {:name "Ali Ferguson" :age 22} "people" "people/1" true)
 ```
 
-## Patch Document
+### Patch Document
 To update a document, use `patch-document!` and pass in the client, ID and changes on the document
 ```clojure
 (with-open [raven (rdb/new-session! client)]
  (rdb/patch-doc! raven "people/1" {:name "Hussain Ferguson"}))
 ```
 
-## Load Document
+### Load Document
 ```clojure
 ;; pass the ID of the document as second argument and client as first argument
 (with-open [raven (rdb/new-session! client)]
@@ -123,8 +123,147 @@ You may additional pass a vector to include related documents in the same roundt
   :@last-modified "2018-07-27T12:11:53.0318842Z"}}
 ```
 
-## Delete Document (opinion: almost never delete)
+### Delete Document (opinion: almost never delete)
 ```clojure
 (with-open [raven (rdb/new-session! client)]
  (rdb/delete-doc! raven "people/01e11da0-36f2-11ee-8788-5d62d3ca0185"))
 ```
+
+### Pipelning
+All CRUD operations (except load-doc!) accept an additonal param to indicate whether the changes should be saved immediately or wait for a singal `save-changes!`. By default, all changes are executed when the function is called, this can be altered by passing an additonal parameter with value `false`.
+
+```clojure
+;; although five write operations are made, only one request to the server is made
+(with-open [raven (rdb/new-session! client)]
+  (rdb/patch-doc! raven "people-1" {:name "Marzook Tyson" :age 55} false)
+  (rdb/patch-doc! raven "people-2" {:age "Nabeel Foreman"} false)
+  (rdb/delete-doc! raven "people-3" false)
+  (rdb/add-doc! raven {:name "Cute bbaby" :age 3} "people" false)
+  (rdb/save-changes! raven))
+```
+Do note that once a request is made to the server, all changes will be submitted, regardless of `save-changes!`.
+
+## Query Builder
+Queries are be built using `query` function. The function takes in only one argument which is the collection name. Queries are not bound to a client, thus, you may store this and (re)use it when a session is opened. 
+
+All query operations return an new instance of query, Therefore, using a threading macro makes a lot of sense to chain query operations.
+```clojure
+;; example of a query
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     ...
+     ...
+     (rdb/->vector raven)))
+```
+
+
+### Where Equals
+```clojure
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/where-equal :Name "Chang")
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 19.0,
+  :UnitsOnOrder 17,
+  :Supplier "suppliers/1-A",
+  :Discontinued false,
+  :Category "categories/1-A",
+  :Name "Chang",
+  :UnitsInStock 1,
+  :ReorderLevel 25,
+  :QuantityPerUnit "24 - 12 oz bottles"})
+```
+
+### Where Not Equal
+```clojure
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/where-not-equal :Supplier "suppliers/1-A")
+     (rdb/where-not-equal :Category "categories/2-A")
+     (rdb/where-equal :UnitsInStock 4)
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 97.0,
+  :UnitsOnOrder 29,
+  :Supplier "suppliers/4-A",
+  :Discontinued true,
+  :Category "categories/6-A",
+  :Name "Mishi Kobe Niku",
+  :UnitsInStock 4,
+  :ReorderLevel 0,
+  :QuantityPerUnit "18 - 500 g pkgs."}
+ {:PricePerUnit 31.0,
+  :UnitsOnOrder 31,
+  :Supplier "suppliers/4-A",
+  :Discontinued false,
+  :Category "categories/8-A",
+  :Name "Ikura",
+  :UnitsInStock 4,
+  :ReorderLevel 0,
+  :QuantityPerUnit "12 - 200 ml jars"}
+ {:PricePerUnit 10.0,
+  :UnitsOnOrder 4,
+  :Supplier "suppliers/4-A",
+  :Discontinued false,
+  :Category "categories/7-A",
+  :Name "Longlife Tofu",
+  :UnitsInStock 4,
+  :ReorderLevel 5,
+  :QuantityPerUnit "5 kg pkg."})
+```
+
+### Where Greater Than, Greater Than or Equal, Less Than, Less Than and Equal
+All of these operation accept the same arguments, a query, a field and a value
+```clojure
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/where-greater :UnitsInStock 5)
+     (rdb/where-less :UnitsInStock 10)
+     (rdb/where-eq-or-greater :PricePerUnit 30)
+     (rdb/where-eq-or-less :PricePerUnit 90)
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 39.0,
+  :UnitsOnOrder 0,
+  :Supplier "suppliers/7-A",
+  :Discontinued true,
+  :Category "categories/6-A",
+  :Name "Alice Mutton",
+  :UnitsInStock 7,
+  :ReorderLevel 0,
+  :QuantityPerUnit "20 - 1 kg tins"}
+ {:PricePerUnit 62.5,
+  :UnitsOnOrder 42,
+  :Supplier "suppliers/7-A",
+  :Discontinued false,
+  :Category "categories/8-A",
+  :Name "Carnarvon Tigers",
+  :UnitsInStock 7,
+  :ReorderLevel 0,
+  :QuantityPerUnit "16 kg pkg."}
+ {:PricePerUnit 81.0,
+  :UnitsOnOrder 40,
+  :Supplier "suppliers/8-A",
+  :Discontinued false,
+  :Category "categories/3-A",
+  :Name "Sir Rodney's Marmalade",
+  :UnitsInStock 8,
+  :ReorderLevel 0,
+  :QuantityPerUnit "30 gift boxes"}
+ {:PricePerUnit 43.9,
+  :UnitsOnOrder 24,
+  :Supplier "suppliers/7-A",
+  :Discontinued false,
+  :Category "categories/2-A",
+  :Name "Vegie-spread",
+  :UnitsInStock 7,
+  :ReorderLevel 5,
+  :QuantityPerUnit "15 - 625 g jars"})
+```
+
+
+
