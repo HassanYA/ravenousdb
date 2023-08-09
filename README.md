@@ -1,7 +1,7 @@
 # Ravenous DB
 A RavenDB client for Clojure (Wrapper around ravendb-jvm-client) 
 
-🚧 Experimental - Do not use in Production
+⚠️ Experimental - Do not use in Production ⚠️
 
 ### Why?
 It is interesting, RavenDB seems awesome.
@@ -32,4 +32,31 @@ Session instance then can be used to send commands to RavenDB
      (rdb/limit 3)
      (rdb/->vector raven))))
 ```
+# CRUD Operations
+All CRUD operations must be made with a client that has a session open.
 
+## Create Document
+Use `add-doc!` to create a document. The ID and Collection of the document can be found in the map's meta
+```clojure
+;; the function expects a client as first argument, a document/map as second argument and name of the collection as lasst argument
+(with-open [raven (rdb/new-session! client)]
+ (rdb/add-doc! raven {:name "Ali Ferguson" :age 22} "people"))
+
+;; Output
+{:name "Ali Ferguson", :age 22}
+```
+
+Using `meta` to get inserted document ID and collection
+```clojure
+;; the function expects a client as first argument, a document/map as second argument and name of the collection as lasst argument
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/add-doc! raven {:name "Ali Ferguson" :age 22} "people")))
+
+;; Output
+{:collection "people", :id "people/01e11da0-36f2-11ee-8788-5d62d3ca0185"}
+```
+
+Alternatively, you may pass in an ID for the document that needs to be inserted
+```clojure
+(rdb/add-doc! raven {:name "Ali Ferguson" :age 22} "people" "people/1" true)
+```
