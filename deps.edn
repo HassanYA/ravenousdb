@@ -1,0 +1,6 @@
+{:paths ["src" "classes"]
+ :deps {cheshire/cheshire {:mvn/version "5.11.0"}
+        net.ravendb/ravendb {:mvn/version "5.4.1"}
+        piotr-yuxuan/closeable-map {:mvn/version "0.33.0"}
+        danlentz/clj-uuid {:mvn/version "0.1.9"}
+        com.rpl/proxy-plus {:mvn/version "0.0.9"}}}
