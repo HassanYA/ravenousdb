@@ -129,7 +129,7 @@ You may additional pass a vector to include related documents in the same roundt
  (rdb/delete-doc! raven "people/01e11da0-36f2-11ee-8788-5d62d3ca0185"))
 ```
 
-### Pipelning
+### Pipelining
 All CRUD operations (except load-doc!) accept an additonal param to indicate whether the changes should be saved immediately or wait for a singal `save-changes!`. By default, all changes are executed when the function is called, this can be altered by passing an additonal parameter with value `false`.
 
 ```clojure
@@ -265,5 +265,159 @@ All of these operation accept the same arguments, a query, a field and a value
   :QuantityPerUnit "15 - 625 g jars"})
 ```
 
+### Where Between
+```clojure
+;; where-between expects a field, a min value and a max value 
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/where-between :UnitsInStock 3 5)
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 19.0,
+  :UnitsOnOrder 17,
+  :Supplier "suppliers/1-A",
+  :Discontinued false,
+  :Category "categories/1-A",
+  :Name "Chang",
+  :UnitsInStock 1,
+  :ReorderLevel 25,
+  :QuantityPerUnit "24 - 12 oz bottles"}
+ {:PricePerUnit 10.0,
+  :UnitsOnOrder 13,
+  :Supplier "suppliers/1-A",
+  :Discontinued false,
+  :Category "categories/2-A",
+  :Name "Aniseed Syrup",
+  :UnitsInStock 1,
+  :ReorderLevel 25,
+  :QuantityPerUnit "12 - 550 ml bottles"}
+ {:PricePerUnit 22.0,
+  :UnitsOnOrder 53,
+  :Supplier "suppliers/2-A",
+  :Discontinued false,
+  :Category "categories/2-A",
+  :Name "Chef Anton's Cajun Seasoning",
+  :UnitsInStock 2,
+  ....
+```
+### Where Starts With, Ends With
+```clojure
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/where-starts-with :Name "Chef")
+     (rdb/where-ends-with :Name "Mix")
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 21.35,
+  :UnitsOnOrder 0,
+  :Supplier "suppliers/2-A",
+  :Discontinued true,
+  :Category "categories/2-A",
+  :Name "Chef Anton's Gumbo Mix",
+  :UnitsInStock 2,
+  :ReorderLevel 0,
+  :QuantityPerUnit "36 boxes"})
+```
+
+### Where In, Not In
+```clojure
+(-> (rdb/query "products")
+     (rdb/where-in :Supplier ["suppliers/5-A" "suppliers/6-A"])
+     (rdb/where-not-in :Category ["categories/4-A" "categories/7-A"])
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 6.0,
+  :UnitsOnOrder 24,
+  :Supplier "suppliers/6-A",
+  :Discontinued false,
+  :Category "categories/8-A",
+  :Name "Konbu",
+  :UnitsInStock 6,
+  :ReorderLevel 5,
+  :QuantityPerUnit "2 kg box"}
+ {:PricePerUnit 15.5,
+  :UnitsOnOrder 39,
+  :Supplier "suppliers/6-A",
+  :Discontinued false,
+  :Category "categories/2-A",
+  :Name "Genen Shouyu",
+  :UnitsInStock 6,
+  :ReorderLevel 5,
+  :QuantityPerUnit "24 - 250 ml bottles"})
+```
+
+### Order By (Asc/Desc)
+Order the results of the query by a specific field. By default ordering is done in asc. This behavour can be altered by passing in an additonal parameter as true or using `order-by-desc`. `order-by-asc` is also available as an alias for `order-by` but does not accept an addional parameter for `desc?`
+```clojure
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/order-by :Name) 
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 39.0,
+  :UnitsOnOrder 0,
+  :Supplier "suppliers/7-A",
+  :Discontinued true,
+  :Category "categories/6-A",
+  :Name "Alice Mutton",
+  :UnitsInStock 7,
+  :ReorderLevel 0,
+  :QuantityPerUnit "20 - 1 kg tins"}
+ {:PricePerUnit 10.0,
+  :UnitsOnOrder 13,
+  :Supplier "suppliers/1-A",
+  :Discontinued false,
+  :Category "categories/2-A",
+  :Name "Aniseed Syrup",
+  :UnitsInStock 1,
+  :ReorderLevel 25,
+  :QuantityPerUnit "12 - 550 ml bottles"}
+ {:PricePerUnit 18.4,
+  :UnitsOnOrder 123,
+  :Supplier "suppliers/19-A",
+  :Discontinued false,
+  :Category "categories/8-A",
+  :Name "Boston Crab Meat",
+  :UnitsInStock 19,
+  :ReorderLevel 30,
+  :QuantityPerUnit "24 - 4 oz tins"}
+....
+```
+
+
+### Limit, Skip
+As the name implies, limit will restrict the result to x number of documents and skip will move past the first y number of documents of query results
+```clojure
+(with-open [raven (rdb/new-session! client)]
+ (-> (rdb/query "products")
+     (rdb/limit 2)
+     (rdb/skip 1)
+     (rdb/order-by :Name)
+     (rdb/->vector raven)))
+
+;; Output
+({:PricePerUnit 10.0,
+  :UnitsOnOrder 13,
+  :Supplier "suppliers/1-A",
+  :Discontinued false,
+  :Category "categories/2-A",
+  :Name "Aniseed Syrup",
+  :UnitsInStock 1,
+  :ReorderLevel 25,
+  :QuantityPerUnit "12 - 550 ml bottles"}
+ {:PricePerUnit 18.4,
+  :UnitsOnOrder 123,
+  :Supplier "suppliers/19-A",
+  :Discontinued false,
+  :Category "categories/8-A",
+  :Name "Boston Crab Meat",
+  :UnitsInStock 19,
+  :ReorderLevel 30,
+  :QuantityPerUnit "24 - 4 oz tins"})
+```
 
 
