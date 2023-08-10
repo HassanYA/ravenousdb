@@ -270,7 +270,7 @@ All of these operation accept the same arguments, a query, a field and a value
 ;; where-between expects a field, a min value and a max value 
 (with-open [raven (rdb/new-session! client)]
  (-> (rdb/query "products")
-     (rdb/where-between :UnitsInStock 3 5)
+     (rdb/where-between :UnitsInStock 1 3)
      (rdb/->vector raven)))
 
 ;; Output
@@ -299,6 +299,8 @@ All of these operation accept the same arguments, a query, a field and a value
   :Category "categories/2-A",
   :Name "Chef Anton's Cajun Seasoning",
   :UnitsInStock 2,
+  :ReorderLevel 0,
+  :QuantityPerUnit "48 - 6 oz jars"}
   ....
 ```
 ### Where Starts With, Ends With
