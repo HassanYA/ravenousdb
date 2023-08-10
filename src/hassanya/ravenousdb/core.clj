@@ -134,7 +134,7 @@
 
 (defn where-between
   "Takes a `query` and adds a where between clause to it, on `field`, value must start from `start` until `end`"
-  [query field start end] (conj-ops query :where-neq [field start end]))
+  [query field start end] (conj-ops query :where-between [field start end]))
 
 (defn where-in
   "Takes a `query` and adds a where between clause to it, on `field`, value must exist in `vect`"
@@ -231,18 +231,3 @@
 (defn ->first
   "Returns the first item from `query` results using `client` with an open session"
   [query client] (java->clj (.first (gen-document-query query client))))
-
-
-(def client (new-client "northwind" "http://localhost:8080"))
-
-(with-open [raven (new-session! client)]
-  (-> (query "products")
-      (where-equal :Discontinued false)
-      ;;(where-not-equal :PricePerUnit 22)
-      ;;(where-between :UnitsInStock 2 2)
-      (where-ends-with :Name "ng")
-      ;;(where-less :UnitsInStock 2)
-      (order-by :Name)
-      (skip 1)
-      (limit 2)
-      (->vector raven)))
