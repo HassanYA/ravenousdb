@@ -4,7 +4,7 @@ A RavenDB client for Clojure (Wrapper around ravendb-jvm-client)
 ⚠️ Experimental - Do not use in Production ⚠️
 
 ### Why?
-It is interesting, RavenDB seems awesome.
+It is interesting, RavenDB seems awesome but does not get enough recognition. Plus, there are no clojure based clients, apart from an outdated lib that doesn't seem to work with latest version of RavenDB.
 
 # Usage
 ## Creating a Client
@@ -23,7 +23,7 @@ A client should be created once per application (given that there is only one DB
 Do not tamper with the map returned from this function. As changes after opening the first session, will not take effect.
 
 ## Opening a Session
-Before executing in operation against RavenDB server, a session must be created. This can be achieved using `new-session!`.
+Before executing an operation against RavenDB server, a session must be created. This can be achieved using `new-session!`.
 Session instance then can be used to send commands to RavenDB
 ```clojure
 (with-open [raven (rdb/new-session! client)]
