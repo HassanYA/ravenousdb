@@ -4,7 +4,7 @@ A RavenDB client for Clojure (Wrapper around ravendb-jvm-client)
 ⚠️ Experimental - Do not use in Production ⚠️
 
 ### Why?
-It is interesting, RavenDB seems awesome but does not get enough recognition. Plus, there are no clojure based clients, apart from an outdated lib that doesn't seem to work with latest version of RavenDB.
+It is interesting, RavenDB seems awesome but does not get enough recognition. Plus, there are no clojure based clients, apart from an abandoned lib that doesn't seem to work with latest version of RavenDB.
 
 # Usage
 ## Creating a Client
